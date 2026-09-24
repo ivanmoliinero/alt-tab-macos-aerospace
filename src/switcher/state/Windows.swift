@@ -120,6 +120,7 @@ class Windows {
         for window in list {
             refreshIfWindowShouldBeShownToTheUser(window, filters)
         }
+        filterAerospaceWindows()
         refreshWhichWindowsToShowTheUser()
         sort()
         return true
@@ -544,7 +545,8 @@ class Windows {
             state: window.state,
             app: window.application.state,
             searchMatches: query.isEmpty ? false : Search.matches(window, query: query),
-            searchRelevance: query.isEmpty ? 0 : Search.relevance(for: window, query: query))
+            searchRelevance: query.isEmpty ? 0 : Search.relevance(for: window, query: query),
+            aerospaceId: window.aerospaceId)
     }
 
     private static func orderSortType(_ p: WindowOrderPreference) -> OrderSortType {
@@ -862,6 +864,61 @@ class Windows {
             windows.forEach { $0.application.addWindowlessWindowIfNeeded() }
         }
         App.refreshOpenUiAfterExternalEvent([], windowRemoved: true)
+    }
+
+    private static func filterAerospaceWindows() {
+        guard let focusedWids = AeroSpaceWindows.focusedWorkspaceWindowIds() else {
+            return
+        }
+        for window in list {
+            guard let cgWindowId = window.cgWindowId else {
+                window.shouldShowTheUser = false
+                continue
+            }
+            if !focusedWids.contains(cgWindowId) && !window.isOnAllSpaces {
+                window.shouldShowTheUser = false
+            }
+        }
+    }
+}
+
+enum AeroSpaceWindows {
+    /// Returns the set of CGWindowIDs on the currently focused AeroSpace workspace,
+    /// or nil if AeroSpace is not installed or not running.
+    static func focusedWorkspaceWindowIds() -> Set<CGWindowID>? {
+        let aerospacePath = "/opt/homebrew/bin/aerospace"
+        guard FileManager.default.isExecutableFile(atPath: aerospacePath) else {
+            return nil
+        }
+        let task = Process()
+        task.launchPath = aerospacePath
+        task.arguments = ["list-windows", "--workspace", "focused", "--format", "%{window-id}"]
+
+        let pipe = Pipe()
+        task.standardOutput = pipe
+
+        do {
+            try task.run()
+        } catch {
+            return nil
+        }
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        task.waitUntilExit()
+
+        guard task.terminationStatus == 0,
+              let output = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+
+        let ids = output
+            .components(separatedBy: .newlines)
+            .compactMap { line -> CGWindowID? in
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty, let id = CGWindowID(trimmed) else { return nil }
+                return id
+            }
+        return Set(ids)
     }
 }
 

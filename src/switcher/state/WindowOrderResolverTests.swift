@@ -13,13 +13,14 @@ final class WindowOrderResolverTests: XCTestCase {
                    isWindowlessApp: Bool = false, isHidden: Bool = false, isMinimized: Bool = false,
                    isOnAllSpaces: Bool = false, spaceIndexes: [Int] = [],
                    lastFocusOrder: Int = 0, creationOrder: Int = 0,
-                   appName: String = "App", windowTitle: String = "Title") -> OrderWindow {
+                   appName: String = "App", windowTitle: String = "Title",
+                   aerospaceId: String? = nil) -> OrderWindow {
         let state = WindowState(id: "w", isPhantom: false, isWindowlessApp: isWindowlessApp,
                                 isFullscreen: false, isMinimized: isMinimized, isTabbed: false,
                                 isOnAllSpaces: isOnAllSpaces, spaceIds: [], spaceIndexes: spaceIndexes,
                                 lastFocusOrder: lastFocusOrder, creationOrder: creationOrder, title: windowTitle)
         let app = ApplicationState(pid: 0, bundleIdentifier: nil, localizedName: appName, isHidden: isHidden)
-        return OrderWindow(state: state, app: app, searchMatches: searchMatches, searchRelevance: searchRelevance)
+        return OrderWindow(state: state, app: app, searchMatches: searchMatches, searchRelevance: searchRelevance, aerospaceId: aerospaceId)
     }
 
     // MARK: - A. Search ranking
@@ -141,6 +142,24 @@ final class WindowOrderResolverTests: XCTestCase {
         XCTAssertFalse(WindowOrderResolver.isOrderedBefore(w(isOnAllSpaces: false, spaceIndexes: [0]),
                                                            w(isOnAllSpaces: true),
                                                            sortType: .space))
+    }
+
+    func testSpaceAeroSpaceWorkspaceOrderedStandardCompare() {
+        XCTAssertTrue(WindowOrderResolver.isOrderedBefore(w(aerospaceId: "1"), w(aerospaceId: "2"), sortType: .space))
+        XCTAssertTrue(WindowOrderResolver.isOrderedBefore(w(aerospaceId: "2"), w(aerospaceId: "10"), sortType: .space))
+        XCTAssertTrue(WindowOrderResolver.isOrderedBefore(w(aerospaceId: "1"), w(aerospaceId: "web"), sortType: .space))
+        XCTAssertFalse(WindowOrderResolver.isOrderedBefore(w(aerospaceId: "web"), w(aerospaceId: "1"), sortType: .space))
+    }
+
+    func testSpaceAeroSpaceWorkspaceTakesPrecedenceOverMissingWorkspace() {
+        XCTAssertTrue(WindowOrderResolver.isOrderedBefore(w(aerospaceId: "2"), w(aerospaceId: nil, spaceIndexes: [0]), sortType: .space))
+        XCTAssertFalse(WindowOrderResolver.isOrderedBefore(w(aerospaceId: nil, spaceIndexes: [0]), w(aerospaceId: "2"), sortType: .space))
+    }
+
+    func testSpaceAeroSpaceWorkspaceSameWorkspaceTiebreaksByAppName() {
+        XCTAssertTrue(WindowOrderResolver.isOrderedBefore(w(aerospaceId: "web", appName: "Aaa"),
+                                                          w(aerospaceId: "web", appName: "Bbb"),
+                                                          sortType: .space))
     }
 
     // MARK: - G. Tiebreak / symmetry

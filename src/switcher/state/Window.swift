@@ -52,6 +52,8 @@ class Window {
     var isHidden: Bool { get { application.isHidden } }
     var dockLabel: String? { get { application.dockLabel } }
     var screenId: ScreenUuid?
+    /// Shell-owned AeroSpace workspace identifier (e.g. "1", "main", "web") queried dynamically before showing the UI.
+    var aerospaceId: String?
     var axUiElement: AXUIElement?
     /// Behavioral evidence is independent from AX availability. Once exact attention names this destination,
     /// later semantic refreshes may refine it but cannot pretend the interaction did not happen.

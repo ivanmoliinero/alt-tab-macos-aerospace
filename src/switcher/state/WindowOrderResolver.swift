@@ -19,6 +19,7 @@ struct OrderWindow: Equatable {
     let app: ApplicationState
     let searchMatches: Bool       // Search.matches (only meaningful when search is active)
     let searchRelevance: Double   // Search.relevance
+    var aerospaceId: String? = nil
 }
 
 struct ApplicationRepresentativeCandidate: Equatable {
@@ -75,15 +76,7 @@ enum WindowOrderResolver {
             order = compareByAppNameThenTitle(a, b)
         }
         if sortType == .space {
-            if a.state.isOnAllSpaces && b.state.isOnAllSpaces {
-                order = .orderedSame
-            } else if a.state.isOnAllSpaces {
-                order = .orderedAscending
-            } else if b.state.isOnAllSpaces {
-                order = .orderedDescending
-            } else if let s0 = a.state.spaceIndexes.first, let s1 = b.state.spaceIndexes.first {
-                order = intOrder(s0, s1)
-            }
+            order = compareByAeroSpaceWorkspace(a, b)
             if order == .orderedSame {
                 order = compareByAppNameThenTitle(a, b)
             }
@@ -92,6 +85,29 @@ enum WindowOrderResolver {
             order = intOrder(a.state.lastFocusOrder, b.state.lastFocusOrder)
         }
         return order == .orderedAscending
+    }
+
+    private static func compareByAeroSpaceWorkspace(_ a: OrderWindow, _ b: OrderWindow) -> ComparisonResult {
+        if a.state.isOnAllSpaces && b.state.isOnAllSpaces {
+            return .orderedSame
+        } else if a.state.isOnAllSpaces {
+            return .orderedAscending
+        } else if b.state.isOnAllSpaces {
+            return .orderedDescending
+        }
+        if let w0 = a.aerospaceId, let w1 = b.aerospaceId {
+            return w0.localizedStandardCompare(w1)
+        }
+        if a.aerospaceId != nil {
+            return .orderedAscending
+        }
+        if b.aerospaceId != nil {
+            return .orderedDescending
+        }
+        if let s0 = a.state.spaceIndexes.first, let s1 = b.state.spaceIndexes.first {
+            return intOrder(s0, s1)
+        }
+        return .orderedSame
     }
 
     static func compareByAppNameThenTitle(_ a: OrderWindow, _ b: OrderWindow) -> ComparisonResult {
