@@ -1,4 +1,5 @@
 import Cocoa
+import Darwin
 
 class Windows {
     static var list = [Window]()
@@ -886,6 +887,101 @@ enum AeroSpaceWindows {
     /// Returns the set of CGWindowIDs on the currently focused AeroSpace workspace,
     /// or nil if AeroSpace is not installed or not running.
     static func focusedWorkspaceWindowIds() -> Set<CGWindowID>? {
+        // Fast path: direct Unix domain socket IPC (< 1ms, zero process spawn overhead)
+        if let ids = queryViaSocket() {
+            return ids
+        }
+        // Fallback path: CLI execution (~50-80ms)
+        return queryViaCli()
+    }
+
+    private static func queryViaSocket() -> Set<CGWindowID>? {
+        let user = NSUserName()
+        let socketPath = "/tmp/bobko.aerospace-\(user).sock"
+        guard FileManager.default.fileExists(atPath: socketPath) else {
+            return nil
+        }
+
+        let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+        guard fd >= 0 else { return nil }
+        defer { close(fd) }
+
+        // 50ms timeout to ensure summon path never blocks
+        var tv = timeval(tv_sec: 0, tv_usec: 50_000)
+        setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+        setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+
+        var addr = sockaddr_un()
+        addr.sun_family = sa_family_t(AF_UNIX)
+
+        let pathMax = MemoryLayout.size(ofValue: addr.sun_path)
+        guard socketPath.utf8.count < pathMax else {
+            return nil
+        }
+
+        socketPath.withCString { cstr in
+            withUnsafeMutablePointer(to: &addr.sun_path) { sunPathPtr in
+                let dest = UnsafeMutableRawPointer(sunPathPtr).assumingMemoryBound(to: CChar.self)
+                strncpy(dest, cstr, pathMax - 1)
+            }
+        }
+
+        let addrLen = socklen_t(MemoryLayout<sockaddr_un>.size)
+        let connectResult = withUnsafePointer(to: &addr) { ptr in
+            let sockPtr = UnsafeRawPointer(ptr).assumingMemoryBound(to: sockaddr.self)
+            return connect(fd, sockPtr, addrLen)
+        }
+        guard connectResult == 0 else { return nil }
+
+        // Handshake: exchange protocol version 1 (4 bytes little-endian)
+        var clientVersion: UInt32 = UInt32(1).littleEndian
+        guard write(fd, &clientVersion, 4) == 4 else { return nil }
+
+        var serverVersion: UInt32 = 0
+        guard read(fd, &serverVersion, 4) == 4 else { return nil }
+        guard UInt32(littleEndian: serverVersion) == 1 else { return nil }
+
+        // ClientRequest JSON payload: {"args":["list-windows","--workspace","focused","--format","%{window-id}"]}
+        let requestJson = "{\"args\":[\"list-windows\",\"--workspace\",\"focused\",\"--format\",\"%{window-id}\"]}"
+        guard let reqData = requestJson.data(using: .utf8) else { return nil }
+
+        var reqLen = UInt32(reqData.count).littleEndian
+        guard write(fd, &reqLen, 4) == 4 else { return nil }
+        let written = reqData.withUnsafeBytes { write(fd, $0.baseAddress!, reqData.count) }
+        guard written == reqData.count else { return nil }
+
+        // Read 4-byte response length
+        var respLenLE: UInt32 = 0
+        guard read(fd, &respLenLE, 4) == 4 else { return nil }
+        let respLen = Int(UInt32(littleEndian: respLenLE))
+        guard respLen > 0 && respLen < 2_000_000 else { return nil }
+
+        var respData = Data(count: respLen)
+        var totalRead = 0
+        let readOk = respData.withUnsafeMutableBytes { (buf: UnsafeMutableRawBufferPointer) -> Bool in
+            guard let base = buf.baseAddress else { return false }
+            while totalRead < respLen {
+                let n = read(fd, base.advanced(by: totalRead), respLen - totalRead)
+                if n <= 0 { return false }
+                totalRead += n
+            }
+            return true
+        }
+        guard readOk else { return nil }
+
+        struct SocketResponse: Decodable {
+            let exitCode: Int32
+            let stdout: String
+        }
+        guard let resp = try? JSONDecoder().decode(SocketResponse.self, from: respData),
+              resp.exitCode == 0 else {
+            return nil
+        }
+
+        return parseWindowIds(from: resp.stdout)
+    }
+
+    private static func queryViaCli() -> Set<CGWindowID>? {
         let aerospacePath = "/opt/homebrew/bin/aerospace"
         guard FileManager.default.isExecutableFile(atPath: aerospacePath) else {
             return nil
@@ -911,7 +1007,11 @@ enum AeroSpaceWindows {
             return nil
         }
 
-        let ids = output
+        return parseWindowIds(from: output)
+    }
+
+    private static func parseWindowIds(from text: String) -> Set<CGWindowID> {
+        let ids = text
             .components(separatedBy: .newlines)
             .compactMap { line -> CGWindowID? in
                 let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
