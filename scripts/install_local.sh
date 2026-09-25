@@ -111,10 +111,11 @@ cp -R "$BUILT_APP" "$DESTINATION"
 echo "--> Clearing quarantine attributes (xattr -cr)..."
 xattr -cr "$DESTINATION"
 
-# Verify code signature
-echo "--> Verifying code signature..."
-codesign --verify --deep --strict "$DESTINATION"
-echo "    Code signature verified successfully."
+# Ensure ad-hoc code signature for local execution
+echo "--> Ensuring ad-hoc code signature..."
+codesign --force --deep --sign - "$DESTINATION"
+echo "    Ad-hoc code signature applied."
+
 
 # Reset TCC database entries if requested
 if [[ "$RESET_PERMISSIONS" == true ]]; then

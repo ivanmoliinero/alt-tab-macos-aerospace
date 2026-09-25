@@ -404,8 +404,10 @@ class Windows {
         // partially-clipped edge tile yanks the whole list — the accidental "edge scroll". Mouse users scroll
         // with the wheel/trackpad instead.
         if !fromMouse {
-            let focusedView = TilesView.recycledViews[index]
-            TilesView.scrollView.contentView.scrollToVisible(focusedView.frame)
+            if TilesView.recycledViews.indices.contains(index) {
+                let focusedView = TilesView.recycledViews[index]
+                TilesView.scrollView.contentView.scrollToVisible(focusedView.frame)
+            }
         }
         voiceOverWindow(index)
     }
@@ -884,9 +886,9 @@ class Windows {
 }
 
 enum AeroSpaceWindows {
-    /// Returns the set of CGWindowIDs on the currently focused AeroSpace workspace,
+    /// Returns the ordered array of CGWindowIDs on the currently focused AeroSpace workspace,
     /// or nil if AeroSpace is not installed or not running.
-    static func focusedWorkspaceWindowIds() -> Set<CGWindowID>? {
+    static func focusedWorkspaceWindowIds() -> [CGWindowID]? {
         // Fast path: direct Unix domain socket IPC (< 1ms, zero process spawn overhead)
         if let ids = queryViaSocket() {
             return ids
@@ -895,7 +897,7 @@ enum AeroSpaceWindows {
         return queryViaCli()
     }
 
-    private static func queryViaSocket() -> Set<CGWindowID>? {
+    private static func queryViaSocket() -> [CGWindowID]? {
         let user = NSUserName()
         let socketPath = "/tmp/bobko.aerospace-\(user).sock"
         guard FileManager.default.fileExists(atPath: socketPath) else {
@@ -981,7 +983,7 @@ enum AeroSpaceWindows {
         return parseWindowIds(from: resp.stdout)
     }
 
-    private static func queryViaCli() -> Set<CGWindowID>? {
+    private static func queryViaCli() -> [CGWindowID]? {
         let aerospacePath = "/opt/homebrew/bin/aerospace"
         guard FileManager.default.isExecutableFile(atPath: aerospacePath) else {
             return nil
@@ -1010,15 +1012,14 @@ enum AeroSpaceWindows {
         return parseWindowIds(from: output)
     }
 
-    private static func parseWindowIds(from text: String) -> Set<CGWindowID> {
-        let ids = text
+    private static func parseWindowIds(from text: String) -> [CGWindowID] {
+        text
             .components(separatedBy: .newlines)
             .compactMap { line -> CGWindowID? in
                 let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty, let id = CGWindowID(trimmed) else { return nil }
                 return id
             }
-        return Set(ids)
     }
 }
 

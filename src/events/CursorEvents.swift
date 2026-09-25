@@ -62,8 +62,13 @@ class CursorEvents {
         }
     }
 
+    private static var isPieMenuMode: Bool {
+        Preferences.effectiveAppearanceStyle(SwitcherSession.activeShortcutIndex) == .pieMenu
+    }
+
     private static func handleLeftMouseDown(_ cgEvent: CGEvent) -> Unmanaged<CGEvent>? {
         sawLeftMouseDown = true // this gesture's down is ours; its up is a click, not a foreign drop
+        if isPieMenuMode { return nil }
         if TilesView.hasMarkedText() || ContextMenuEvents.isMenuOpen { return Unmanaged.passUnretained(cgEvent) }
         if isPointerInsideSearchField() {
             mouseDownInsideSearchField = true
@@ -89,6 +94,14 @@ class CursorEvents {
         if mouseDownInsideSearchField || isPointerInsideSearchField() {
             mouseDownInsideSearchField = false
             return Unmanaged.passUnretained(cgEvent)
+        }
+        if isPieMenuMode {
+            if isPointerInsideUi() {
+                App.focusTarget()
+            } else {
+                App.hideUi()
+            }
+            return nil
         }
         guard isPointerInsideUi() else {
             if mouseDownTarget == nil { App.hideUi() }
@@ -138,7 +151,11 @@ class CursorEvents {
 
     private static func handleMouseMoved(_ cgEvent: CGEvent) -> Unmanaged<CGEvent>? {
         if isAllowedToReactToPointerMovement(cgEvent.location) {
-            TilesView.thumbnailOverView.updateHover()
+            if isPieMenuMode {
+                PieMenuPanel.shared?.handleMouseMoved()
+            } else {
+                TilesView.thumbnailOverView.updateHover()
+            }
         }
         return Unmanaged.passUnretained(cgEvent)
     }
@@ -158,8 +175,16 @@ class CursorEvents {
     }
 
     private static func isPointerInsideUi() -> Bool {
-        TilesPanel.shared.contentLayoutRect.contains(pointerLocationInWindow())
+        if isPieMenuMode, let panel = PieMenuPanel.shared, panel.isVisible {
+            let loc = panel.mouseLocationOutsideOfEventStream
+            let radius = PieMenuView.canvasDiameter / 2.0
+            let dx = loc.x - radius
+            let dy = loc.y - radius
+            return hypot(dx, dy) <= radius
+        }
+        return TilesPanel.shared.contentLayoutRect.contains(pointerLocationInWindow())
     }
+
 
     private static func isPointerInsideSearchField() -> Bool {
         let searchField = TilesView.searchField

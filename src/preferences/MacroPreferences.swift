@@ -295,12 +295,14 @@ enum AppearanceStylePreference: CaseIterable, ImageMacroPreference {
     case thumbnails
     case appIcons
     case titles
+    case pieMenu
 
     var localizedString: LocalizedString {
         switch self {
             case .thumbnails: return NSLocalizedString("Thumbnails", comment: "")
             case .appIcons: return NSLocalizedString("App Icons", comment: "")
             case .titles: return NSLocalizedString("Titles", comment: "")
+            case .pieMenu: return NSLocalizedString("Pie Menu", comment: "")
         }
     }
 
@@ -311,6 +313,7 @@ enum AppearanceStylePreference: CaseIterable, ImageMacroPreference {
             case .thumbnails: return WidthHeightImage(width: width, height: height, name: "thumbnails")
             case .appIcons: return WidthHeightImage(width: width, height: height, name: "app_icons")
             case .titles: return WidthHeightImage(width: width, height: height, name: "titles")
+            case .pieMenu: return WidthHeightImage(width: width, height: height, name: "pie_menu")
         }
     }
 }

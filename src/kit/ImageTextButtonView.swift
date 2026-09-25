@@ -93,9 +93,9 @@ class ImageTextButtonView: NSStackView {
         // Create an NSView to contain the image and provide padding
         let imageContainer = NSView()
         imageContainer.translatesAutoresizingMaskIntoConstraints = false
-        // TODO: The appearance theme functionality has not been implemented yet.
-        // We will implement it later; for now, use the light theme.
-        let imageView = NSImageView(image: NSImage(named: image.name + "_light")!)
+        // Safely load bundled illustration or fall back to vector-rendered preview image
+        let loadedImage = NSImage(named: image.name + "_light") ?? PieMenuIllustrationView.renderPreviewImage(size: NSSize(width: image.width, height: image.height))
+        let imageView = NSImageView(image: loadedImage)
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.wantsLayer = true

@@ -151,7 +151,8 @@ class WindowServerEvents {
             // main-thread work by ~500ms while the WindowServer settles a Space transition. Anchor the
             // key-repeat grace to it (see `SwitcherSession.panelBecameVisibleAt`).
             if let session = SwitcherSession.current, session.panelBecameVisibleAt == nil,
-               let panel = TilesPanel.shared, panel.windowNumber > 0, w0 == CGWindowID(panel.windowNumber) {
+               (TilesPanel.shared != nil && TilesPanel.shared.windowNumber > 0 && w0 == CGWindowID(TilesPanel.shared.windowNumber)) ||
+               (PieMenuPanel.shared != nil && PieMenuPanel.shared.windowNumber > 0 && w0 == CGWindowID(PieMenuPanel.shared.windowNumber)) {
                 session.panelBecameVisibleAt = ProcessInfo.processInfo.systemUptime
             }
             MissionControl.surfacesChanged()

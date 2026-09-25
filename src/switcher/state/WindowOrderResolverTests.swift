@@ -152,13 +152,13 @@ final class WindowOrderResolverTests: XCTestCase {
     }
 
     func testSpaceAeroSpaceWorkspaceTakesPrecedenceOverMissingWorkspace() {
-        XCTAssertTrue(WindowOrderResolver.isOrderedBefore(w(aerospaceId: "2"), w(aerospaceId: nil, spaceIndexes: [0]), sortType: .space))
-        XCTAssertFalse(WindowOrderResolver.isOrderedBefore(w(aerospaceId: nil, spaceIndexes: [0]), w(aerospaceId: "2"), sortType: .space))
+        XCTAssertTrue(WindowOrderResolver.isOrderedBefore(w(aerospaceId: "2"), w(spaceIndexes: [0], aerospaceId: nil), sortType: .space))
+        XCTAssertFalse(WindowOrderResolver.isOrderedBefore(w(spaceIndexes: [0], aerospaceId: nil), w(aerospaceId: "2"), sortType: .space))
     }
 
     func testSpaceAeroSpaceWorkspaceSameWorkspaceTiebreaksByAppName() {
-        XCTAssertTrue(WindowOrderResolver.isOrderedBefore(w(aerospaceId: "web", appName: "Aaa"),
-                                                          w(aerospaceId: "web", appName: "Bbb"),
+        XCTAssertTrue(WindowOrderResolver.isOrderedBefore(w(appName: "Aaa", aerospaceId: "web"),
+                                                          w(appName: "Bbb", aerospaceId: "web"),
                                                           sortType: .space))
     }
 
