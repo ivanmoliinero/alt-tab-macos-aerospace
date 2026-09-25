@@ -100,7 +100,7 @@ enum ProGatedPreferences {
         gate: PreferenceGate(
             freeEquivalent: .thumbnails,
             rememberedKey: "rememberedAppearanceStyle",
-            isProValue: { $0 != .thumbnails }))
+            isProValue: { $0 != .thumbnails && $0 != .pieMenu }))
 
     static let appearanceSize = PreferenceDefinition<AppearanceSizePreference>(
         key: "appearanceSize",
@@ -125,7 +125,7 @@ enum ProGatedPreferences {
         gate: PreferenceGate(
             freeEquivalent: .thumbnails,
             rememberedKey: "rememberedAppearanceStyleOverride",
-            isProValue: { $0 != .thumbnails }))
+            isProValue: { $0 != .thumbnails && $0 != .pieMenu }))
 
     static let appearanceSizeOverride0 = PreferenceDefinition<AppearanceSizePreference>(
         key: "appearanceSizeOverride",

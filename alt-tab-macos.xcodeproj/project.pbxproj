@@ -373,6 +373,9 @@
 		D04BAABE804F3769CE22BEB6 /* HyperlinkLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04BA49E45BFFF3D9FC60E43 /* HyperlinkLabel.swift */; };
 		D04BAAF7ACC3B361FBBF52AA /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D04BAED4D420C506DAF539F1 /* Localizable.strings */; };
 		D04BAB048DE698E013577C51 /* TilesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04BA653BD073CB58E2CFC93 /* TilesPanel.swift */; };
+		D04BAPIE0000000000000001 /* PieMenuPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04BAPIE0000000000000011 /* PieMenuPanel.swift */; };
+		D04BAPIE0000000000000002 /* PieMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04BAPIE0000000000000012 /* PieMenuView.swift */; };
+		D04BAPIE0000000000000003 /* PieMenuIllustrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04BAPIE0000000000000013 /* PieMenuIllustrationView.swift */; };
 		D04BAB4EB890853B5B9B2C61 /* BoldLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04BACEE8D430B8CAAD8C4CD /* BoldLabel.swift */; };
 		D04BAB68B7B8D1B548BC3AD5 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04BAAB92261FC04854FDDE9 /* App.swift */; };
 		D04BABD613F88C27E720F316 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D04BA863BC6929EB0A2AC590 /* InfoPlist.strings */; };
@@ -791,6 +794,9 @@
 		D04BA62D5EACAAAD7BCD3E79 /* release.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = release.xcconfig; sourceTree = "<group>"; };
 		D04BA64F1F344007EA13BA05 /* AppearanceTab.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppearanceTab.swift; sourceTree = "<group>"; };
 		D04BA653BD073CB58E2CFC93 /* TilesPanel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TilesPanel.swift; sourceTree = "<group>"; };
+		D04BAPIE0000000000000011 /* PieMenuPanel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PieMenuPanel.swift; sourceTree = "<group>"; };
+		D04BAPIE0000000000000012 /* PieMenuView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PieMenuView.swift; sourceTree = "<group>"; };
+		D04BAPIE0000000000000013 /* PieMenuIllustrationView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PieMenuIllustrationView.swift; sourceTree = "<group>"; };
 		D04BA662DF59DF9A97FDA598 /* de */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = de; path = Localizable.strings; sourceTree = "<group>"; };
 		D04BA6BBFD0E87B8458E91D3 /* feature-suggestion.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = "feature-suggestion.md"; sourceTree = "<group>"; };
 		D04BA6D57A1456C07318B8EA /* GridView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GridView.swift; sourceTree = "<group>"; };
@@ -1365,6 +1371,7 @@
 				5E5EA12E0000000000000001 /* KeyRepeatTimerTestable.swift */,
 				5E5EA12E0000000000000101 /* KeyRepeatTimerTests.swift */,
 				D04BA62E30174C336E4080FA /* main-window */,
+				D04BAPIE0000000000000020 /* pie-menu */,
 				F00DCAFE0000000000000002 /* Search.swift */,
 				F00DCAFE0000000000000003 /* SearchTestable.swift */,
 				BF0CAAAA0000000000000001 /* SearchTests.swift */,
@@ -1666,6 +1673,16 @@
 				5EA8E110000000000000DA11 /* DragAndDropResolverTests.swift */,
 			);
 			path = "main-window";
+			sourceTree = "<group>";
+		};
+		D04BAPIE0000000000000020 /* pie-menu */ = {
+			isa = PBXGroup;
+			children = (
+				D04BAPIE0000000000000011 /* PieMenuPanel.swift */,
+				D04BAPIE0000000000000012 /* PieMenuView.swift */,
+				D04BAPIE0000000000000013 /* PieMenuIllustrationView.swift */,
+			);
+			path = "pie-menu";
 			sourceTree = "<group>";
 		};
 		D04BA6979DFAC087823F7683 /* id.lproj */ = {
@@ -2311,6 +2328,9 @@
 				D04BA48B00B4211A465C7337 /* DebugProfile.swift in Sources */,
 				D04BAB68B7B8D1B548BC3AD5 /* App.swift in Sources */,
 				D04BAB048DE698E013577C51 /* TilesPanel.swift in Sources */,
+				D04BAPIE0000000000000001 /* PieMenuPanel.swift in Sources */,
+				D04BAPIE0000000000000002 /* PieMenuView.swift in Sources */,
+				D04BAPIE0000000000000003 /* PieMenuIllustrationView.swift in Sources */,
 				D04BA69D47B5E60A6AD9CBD9 /* TileTitleView.swift in Sources */,
 				D04BA1B133D53572D7B312C2 /* TileFontIconView.swift in Sources */,
 				D04BA1CEC6B9C8945FEC8740 /* TileView.swift in Sources */,

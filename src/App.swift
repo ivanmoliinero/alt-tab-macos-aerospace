@@ -116,6 +116,7 @@ class App: AppCenterApplication {
     /// we don't want another window to become key when the TilesPanel is hidden
     static func hideTilesPanelWithoutChangingKeyWindow() {
         SecondaryWindows.canBecomeKey = false
+        PieMenuPanel.shared?.orderOut(nil)
         TilesPanel.shared.orderOut(nil)
         SecondaryWindows.canBecomeKey = true
     }
@@ -279,6 +280,10 @@ class App: AppCenterApplication {
     static func cycleSelection(_ direction: Direction, allowWrap: Bool = true) {
         (TilesView.scrollView?.documentView as? TilesDocumentView)?.cancelDraggingTimer()
         CursorEvents.resetDeadzone()
+        if Preferences.effectiveAppearanceStyle(SwitcherSession.activeShortcutIndex) == .pieMenu {
+            PieMenuPanel.shared?.cycleSelection(direction.step(), allowWrap: allowWrap)
+            return
+        }
         if direction == .up || direction == .down {
             TilesView.navigateUpOrDown(direction, allowWrap: allowWrap)
         } else {
@@ -335,6 +340,10 @@ class App: AppCenterApplication {
     static func refreshUi(_ preserveScrollPosition: Bool = false) {
         MainThreadStall.step()
         guard SwitcherSession.isActive else { return }
+        if Preferences.effectiveAppearanceStyle(SwitcherSession.activeShortcutIndex) == .pieMenu {
+            PieMenuPanel.shared?.updateContents()
+            return
+        }
         let preservedScrollOrigin = preserveScrollPosition ? TilesView.currentScrollOrigin() : nil
         Windows.updateSelectedWindow()
         Windows.logTileDump("refreshUi")
@@ -375,6 +384,7 @@ class App: AppCenterApplication {
             // recalc) is invisible. `TilesPanel.show()` flips alpha back to 1 once everything is
             // in its final state. No-op on first summon (panel was orderOut'd with alpha=0).
             TilesPanel.shared.alphaValue = 0
+            PieMenuPanel.shared?.alphaValue = 0
             ProTransitionManager.shared.onSwitcherShown()
             let shouldStartInSearchMode = Preferences.effectiveShortcutStyle(shortcutIndex) == .searchOnRelease
             TilesView.startSearchSession(shouldStartInSearchMode)
@@ -421,10 +431,20 @@ class App: AppCenterApplication {
         if listChangedSincePress, !Windows.updatesBeforeShowing() { hideUi(); return }
         Appearance.update()
         guard SwitcherSession.isActive else { return }
+
+        let style = Preferences.effectiveAppearanceStyle(SwitcherSession.activeShortcutIndex)
+        if style == .pieMenu {
+            TilesPanel.shared.orderOut(nil)
+            PieMenuPanel.shared?.show()
+            KeyRepeatTimer.startRepeatingKeyNextWindow()
+            return
+        }
+
         TilesView.swapBackgroundViewIfNeeded()
         guard SwitcherSession.isActive else { return }
         refreshUi()
         guard SwitcherSession.isActive else { return }
+        PieMenuPanel.shared?.orderOut(nil)
         TilesPanel.shared.show()
         WindowThumbnails.previewSelectedIfNeeded()
         // enqueue the full-res Preview fetches BEFORE the thumbnail pass below, so the Preview sharpens first
@@ -483,6 +503,7 @@ class App: AppCenterApplication {
         Menubar.initialize()
         MainMenu.create()
         _ = TilesPanel()
+        _ = PieMenuPanel()
         _ = PreviewPanel()
         Spaces.refresh()
         Screens.refresh()

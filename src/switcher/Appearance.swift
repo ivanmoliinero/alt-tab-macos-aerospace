@@ -70,6 +70,8 @@ class Appearance {
             appIconsSize(size)
         } else if currentStyle == .titles {
             titlesSize(size)
+        } else if currentStyle == .pieMenu {
+            pieMenuSize(size)
         } else {
             thumbnailsSize(isHorizontalScreen, size)
         }
@@ -176,6 +178,28 @@ class Appearance {
             case .large, .auto:
                 iconSize = 30
                 fontHeight = 16
+        }
+    }
+
+    private static func pieMenuSize(_ size: AppearanceSizePreference) {
+        hideThumbnails = true
+        windowPadding = 0
+        windowCornerRadius = 0
+        cellCornerRadius = 0
+        edgeInsetsSize = 0
+        windowMinWidthInRow = 0
+        windowMaxWidthInRow = 1
+        rowsCount = 1
+        switch size {
+            case .small:
+                iconSize = 36
+                fontHeight = 12
+            case .medium:
+                iconSize = 44
+                fontHeight = 13
+            case .large, .auto:
+                iconSize = 56
+                fontHeight = 14
         }
     }
 

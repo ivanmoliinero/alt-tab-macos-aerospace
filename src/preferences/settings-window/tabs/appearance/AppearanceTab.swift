@@ -58,7 +58,11 @@ class IllustratedImageThemeView: ClickHoverImageView {
         // crash the whole app when the user opens the Customize sheet (matches the other call sites,
         // which assign the optional straight to `.image`).
         let imageView = NSImageView()
-        imageView.image = IllustratedImageThemeView.loadIllustration(imageName)
+        var loaded = IllustratedImageThemeView.loadIllustration(imageName)
+        if loaded == nil && style == .pieMenu {
+            loaded = PieMenuIllustrationView.renderPreviewImage(size: NSSize(width: width, height: width / 1.6))
+        }
+        imageView.image = loaded
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.wantsLayer = true
@@ -139,7 +143,12 @@ class IllustratedImageThemeView: ClickHoverImageView {
     }
 
     private func updateImage(_ imageName: String) {
-        (infoCircle as! NSImageView).image = IllustratedImageThemeView.loadIllustration(getStyleThemeImageName(imageName))
+        var loaded = IllustratedImageThemeView.loadIllustration(getStyleThemeImageName(imageName))
+        if loaded == nil && style == .pieMenu {
+            let size = (infoCircle as? NSImageView)?.bounds.size ?? NSSize(width: 150, height: 93.75)
+            loaded = PieMenuIllustrationView.renderPreviewImage(size: size)
+        }
+        (infoCircle as! NSImageView).image = loaded
     }
 
     static func getConcatenatedImageName(_ style: AppearanceStylePreference,
@@ -678,8 +687,9 @@ class AppearanceTab: NSObject {
     }
 
     static func addProBadgesToStyleButtons(_ stackView: NSStackView) {
+        let proIndices = proGatedAppearanceStyleIndices()
         for (index, view) in stackView.arrangedSubviews.enumerated() {
-            guard index > 0, let buttonView = view as? ImageTextButtonView else { continue }
+            guard proIndices.contains(index), let buttonView = view as? ImageTextButtonView else { continue }
             let badge = ProBadgeView()
             buttonView.addSubview(badge)
             NSLayoutConstraint.activate([
@@ -689,9 +699,11 @@ class AppearanceTab: NSObject {
         }
     }
 
-    /// Indices of `AppearanceStylePreference.allCases` that are Pro-only (everything but `.thumbnails`).
+    /// Indices of `AppearanceStylePreference.allCases` that are Pro-only (neither `.thumbnails` nor `.pieMenu`).
     static func proGatedAppearanceStyleIndices() -> Set<Int> {
-        Set(AppearanceStylePreference.allCases.enumerated().compactMap { $0.element == .thumbnails ? nil : $0.offset })
+        Set(AppearanceStylePreference.allCases.enumerated().compactMap {
+            ($0.element == .thumbnails || $0.element == .pieMenu) ? nil : $0.offset
+        })
     }
 
     /// Re-sync the 3 Pro-aware controls to the currently-stored preferences and the ghost state.
