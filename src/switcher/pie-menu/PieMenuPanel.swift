@@ -26,6 +26,10 @@ final class PieMenuPanel: NSPanel {
     /// Positions and presents the pie menu centered either at the mouse cursor or screen center.
     func show() {
         MainThreadStall.step()
+        guard SwitcherSession.isActive else {
+            orderOut(nil)
+            return
+        }
 
         let size = NSSize(width: PieMenuView.canvasDiameter, height: PieMenuView.canvasDiameter)
         setContentSize(size)
@@ -40,8 +44,13 @@ final class PieMenuPanel: NSPanel {
 
         setFrameOrigin(NSPoint(x: originX, y: originY))
 
-
         view.reloadItems()
+
+        // Double check session is still active after reload before ordering front
+        guard SwitcherSession.isActive else {
+            orderOut(nil)
+            return
+        }
 
         alphaValue = 1.0
         makeKeyAndOrderFront(nil)
@@ -72,17 +81,19 @@ final class PieMenuPanel: NSPanel {
         view.stepSelection(step)
     }
 
-
     /// Forwards pointer movement to the hosted pie menu view.
     func handleMouseMoved() {
         guard SwitcherSession.isActive else { return }
         view.handleMouseMoved()
     }
 
-
     override func orderOut(_ sender: Any?) {
         MainThreadStall.step()
         alphaValue = 0.0
         super.orderOut(sender)
+        if !SwitcherSession.isActive {
+            ContextMenuEvents.toggle(false)
+            CursorEvents.toggle(false)
+        }
     }
 }

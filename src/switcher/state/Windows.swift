@@ -886,15 +886,25 @@ class Windows {
 }
 
 enum AeroSpaceWindows {
+    private static var cachedWindowIds: (timestamp: TimeInterval, ids: [CGWindowID]?)?
+
     /// Returns the ordered array of CGWindowIDs on the currently focused AeroSpace workspace,
     /// or nil if AeroSpace is not installed or not running.
     static func focusedWorkspaceWindowIds() -> [CGWindowID]? {
-        // Fast path: direct Unix domain socket IPC (< 1ms, zero process spawn overhead)
-        if let ids = queryViaSocket() {
-            return ids
+        let now = ProcessInfo.processInfo.systemUptime
+        if let cached = cachedWindowIds, now - cached.timestamp < 0.15 {
+            return cached.ids
         }
-        // Fallback path: CLI execution (~50-80ms)
-        return queryViaCli()
+        // Fast path: direct Unix domain socket IPC (< 1ms, zero process spawn overhead)
+        let ids: [CGWindowID]?
+        if let socketIds = queryViaSocket() {
+            ids = socketIds
+        } else {
+            // Fallback path: CLI execution (~50-80ms)
+            ids = queryViaCli()
+        }
+        cachedWindowIds = (now, ids)
+        return ids
     }
 
     private static func queryViaSocket() -> [CGWindowID]? {
@@ -943,8 +953,8 @@ enum AeroSpaceWindows {
         guard read(fd, &serverVersion, 4) == 4 else { return nil }
         guard UInt32(littleEndian: serverVersion) == 1 else { return nil }
 
-        // ClientRequest JSON payload: {"args":["list-windows","--workspace","focused","--format","%{window-id}"]}
-        let requestJson = "{\"args\":[\"list-windows\",\"--workspace\",\"focused\",\"--format\",\"%{window-id}\"]}"
+        // ClientRequest JSON payload with all required AeroSpace schema fields
+        let requestJson = "{\"args\":[\"list-windows\",\"--workspace\",\"focused\",\"--format\",\"%{window-id}\"],\"stdin\":\"\",\"env\":{},\"workspace\":null,\"focusedWorkspace\":null,\"windowId\":null}"
         guard let reqData = requestJson.data(using: .utf8) else { return nil }
 
         var reqLen = UInt32(reqData.count).littleEndian

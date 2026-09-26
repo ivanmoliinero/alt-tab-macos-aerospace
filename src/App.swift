@@ -435,6 +435,10 @@ class App: AppCenterApplication {
         let style = Preferences.effectiveAppearanceStyle(SwitcherSession.activeShortcutIndex)
         if style == .pieMenu {
             TilesPanel.shared.orderOut(nil)
+            guard SwitcherSession.isActive else {
+                PieMenuPanel.shared?.orderOut(nil)
+                return
+            }
             PieMenuPanel.shared?.show()
             KeyRepeatTimer.startRepeatingKeyNextWindow()
             return

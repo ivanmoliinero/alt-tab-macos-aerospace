@@ -47,6 +47,7 @@ class CursorEvents {
     }
 
     private static let handleEvent: CGEventTapCallBack = { _, type, cgEvent, _ in
+        guard SwitcherSession.isActive else { return Unmanaged.passUnretained(cgEvent) }
         switch type {
             case .leftMouseDown: return handleLeftMouseDown(cgEvent)
             case .leftMouseUp: return handleLeftMouseUp(cgEvent)
