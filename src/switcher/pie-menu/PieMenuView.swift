@@ -249,11 +249,28 @@ final class PieMenuView: NSView {
         let iconCenter = NSPoint(x: center.x + midR * cos(item.midAngle),
                                  y: center.y + midR * sin(item.midAngle))
 
-        let iconSize: CGFloat = items.count > 10 ? 32.0 : 40.0
-        let iconRect = NSRect(x: iconCenter.x - iconSize / 2.0,
-                              y: iconCenter.y - (items.count > 6 ? iconSize / 2.0 : (iconSize / 2.0 - 5.0)),
-                              width: iconSize,
-                              height: iconSize)
+        let appName = (item.window.application.runningApplication.localizedName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawTitle = item.window.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasTitle = !rawTitle.isEmpty && rawTitle != appName
+        let showLabels = items.count <= 10
+
+        let iconSize: CGFloat
+        let iconRect: NSRect
+
+        if showLabels {
+            if hasTitle {
+                iconSize = items.count > 6 ? 32.0 : 36.0
+                let iconY = iconCenter.y + (31.0 - iconSize) / 2.0
+                iconRect = NSRect(x: iconCenter.x - iconSize / 2.0, y: iconY, width: iconSize, height: iconSize)
+            } else {
+                iconSize = items.count > 6 ? 34.0 : 38.0
+                let iconY = iconCenter.y + (17.0 - iconSize) / 2.0
+                iconRect = NSRect(x: iconCenter.x - iconSize / 2.0, y: iconY, width: iconSize, height: iconSize)
+            }
+        } else {
+            iconSize = 32.0
+            iconRect = NSRect(x: iconCenter.x - iconSize / 2.0, y: iconCenter.y - iconSize / 2.0, width: iconSize, height: iconSize)
+        }
 
         // Render application icon
         if let cgIcon = item.window.icon {
@@ -270,22 +287,48 @@ final class PieMenuView: NSView {
             iconPath.stroke()
         }
 
-        // Draw brief label below icon when space permits (<= 8 items)
-        if items.count <= 8 {
-            let appName = item.window.application.runningApplication.localizedName ?? ""
-            let textAttributes: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 10.5, weight: isSelected ? .bold : .medium),
-                .foregroundColor: isSelected ? NSColor.white : NSColor(calibratedWhite: 0.95, alpha: 0.85)
+        // Draw labels below icon when space permits (<= 10 items)
+        if showLabels {
+            let arcWidthAtMidR = midR * abs(item.startAngle - item.endAngle)
+            let maxAvailableWidth = min((outerRadius - innerRadius) * 0.95, arcWidthAtMidR * 0.88)
+
+            // 1. Application Name
+            let appParagraphStyle = NSMutableParagraphStyle()
+            appParagraphStyle.alignment = .center
+            appParagraphStyle.lineBreakMode = .byTruncatingTail
+
+            let appAttributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 10.0, weight: isSelected ? .bold : .semibold),
+                .foregroundColor: isSelected ? NSColor.white : NSColor(calibratedWhite: 0.96, alpha: 0.90),
+                .paragraphStyle: appParagraphStyle
             ]
-            let attributedString = NSAttributedString(string: appName, attributes: textAttributes)
-            let textSize = attributedString.size()
-            let maxLabelWidth: CGFloat = (outerRadius - innerRadius) * 0.95
-            let labelWidth = min(textSize.width, maxLabelWidth)
-            let labelRect = NSRect(x: iconCenter.x - labelWidth / 2.0,
-                                   y: iconRect.minY - 14.0,
-                                   width: labelWidth,
-                                   height: 13.0)
-            attributedString.draw(with: labelRect, options: [.truncatesLastVisibleLine, .usesLineFragmentOrigin])
+            let appAttrString = NSAttributedString(string: appName, attributes: appAttributes)
+            let appTextWidth = min(appAttrString.size().width, maxAvailableWidth)
+            let appNameRect = NSRect(x: iconCenter.x - appTextWidth / 2.0,
+                                     y: iconRect.minY - 3.0 - 14.0,
+                                     width: appTextWidth,
+                                     height: 14.0)
+            appAttrString.draw(with: appNameRect, options: [.truncatesLastVisibleLine, .usesLineFragmentOrigin])
+
+            // 2. Window Title (underneath application name)
+            if hasTitle {
+                let titleParagraphStyle = NSMutableParagraphStyle()
+                titleParagraphStyle.alignment = .center
+                titleParagraphStyle.lineBreakMode = .byTruncatingTail
+
+                let titleAttributes: [NSAttributedString.Key: Any] = [
+                    .font: NSFont.systemFont(ofSize: 8.5, weight: isSelected ? .medium : .regular),
+                    .foregroundColor: isSelected ? NSColor(calibratedWhite: 0.95, alpha: 0.92) : NSColor(calibratedWhite: 0.78, alpha: 0.80),
+                    .paragraphStyle: titleParagraphStyle
+                ]
+                let titleAttrString = NSAttributedString(string: rawTitle, attributes: titleAttributes)
+                let titleTextWidth = min(titleAttrString.size().width, maxAvailableWidth)
+                let titleRect = NSRect(x: iconCenter.x - titleTextWidth / 2.0,
+                                       y: appNameRect.minY - 2.0 - 12.0,
+                                       width: titleTextWidth,
+                                       height: 12.0)
+                titleAttrString.draw(with: titleRect, options: [.truncatesLastVisibleLine, .usesLineFragmentOrigin])
+            }
         }
 
         context.restoreGState()
