@@ -118,10 +118,13 @@ class Windows {
         // Tab grouping (incl. fullscreen siblings) and active→inactive state mirroring are reconciled
         // reactively on WindowServer events (TabGroup.reconcile), so the model is already grouped here —
         // doing it in this synchronous show path would reorder tiles mid-render (UI jump).
-        for window in list {
-            refreshIfWindowShouldBeShownToTheUser(window, filters)
+        if let focusedWids = AeroSpaceWindows.focusedWorkspaceWindowIds() {
+            filterAerospaceWindows(focusedWids, filters)
+        } else {
+            for window in list {
+                refreshIfWindowShouldBeShownToTheUser(window, filters)
+            }
         }
-        filterAerospaceWindows()
         refreshWhichWindowsToShowTheUser()
         sort()
         return true
@@ -869,16 +872,37 @@ class Windows {
         App.refreshOpenUiAfterExternalEvent([], windowRemoved: true)
     }
 
-    private static func filterAerospaceWindows() {
-        guard let focusedWids = AeroSpaceWindows.focusedWorkspaceWindowIds() else {
-            return
-        }
+    private static func filterAerospaceWindows(_ focusedWids: [CGWindowID], _ f: WindowFilters) {
+        let focusedSet = Set(focusedWids)
         for window in list {
             guard let cgWindowId = window.cgWindowId else {
                 window.shouldShowTheUser = false
                 continue
             }
-            if !focusedWids.contains(cgWindowId) && !window.isOnAllSpaces {
+            if focusedSet.contains(cgWindowId) {
+                // Window belongs to the currently focused AeroSpace workspace.
+                // AeroSpace manages workspaces across displays independently of macOS Mission Control Spaces,
+                // and macOS CGS spaceIds are not updated when AeroSpace moves workspaces between monitors.
+                // Therefore, we bypass macOS Mission Control space and screen constraints.
+                window.shouldShowTheUser = WindowFilterResolver.shouldShow(
+                    window.state, window.application.state,
+                    onlyFrontmostApp: f.appsToShow == .active,
+                    excludeFrontmostApp: f.appsToShow == .nonActive,
+                    hideHidden: f.showHiddenWindows == .hide,
+                    hideWindowless: f.showWindowlessApps == .hide,
+                    hideFullscreen: f.showFullscreenWindows == .hide,
+                    hideMinimized: f.showMinimizedWindows == .hide,
+                    onlyVisibleSpaces: false,
+                    onlyNonVisibleSpaces: false,
+                    onlyPreferredScreen: false,
+                    separateTabs: f.groupTabs == .separateWindows,
+                    frontmostPid: Applications.frontmostPid,
+                    visibleSpaceIds: Spaces.visibleSpaces,
+                    exceptions: f.exceptions,
+                    isOnPreferredScreen: true)
+            } else if window.isOnAllSpaces {
+                refreshIfWindowShouldBeShownToTheUser(window, f)
+            } else {
                 window.shouldShowTheUser = false
             }
         }

@@ -572,16 +572,19 @@ class Window {
     func isOnScreen(_ screen: NSScreen) -> Bool {
         if NSScreen.screensHaveSeparateSpaces {
             if let screenUuid = screen.cachedUuid(), let screenSpaces = Spaces.screenSpacesMap[screenUuid] {
-                return screenSpaces.contains { screenSpace in self.spaceIds.contains { $0 == screenSpace } }
+                if screenSpaces.contains(where: { screenSpace in self.spaceIds.contains { $0 == screenSpace } }) {
+                    return true
+                }
             }
-        } else {
-            let referenceWindow = referenceWindowForTabbedWindow()
-            if let topLeftCorner = referenceWindow?.position, let size = referenceWindow?.size {
-                var screenFrameInQuartzCoordinates = screen.frame
-                screenFrameInQuartzCoordinates.origin.y = NSMaxY(NSScreen.screens[0].frame) - NSMaxY(screen.frame)
-                let windowRect = CGRect(origin: topLeftCorner, size: size)
-                return windowRect.intersects(screenFrameInQuartzCoordinates)
-            }
+        }
+        // Fallback: coordinate intersection (crucial when AeroSpace or other tiling WMs
+        // move windows across physical displays without altering macOS Space IDs)
+        let referenceWindow = referenceWindowForTabbedWindow()
+        if let topLeftCorner = referenceWindow?.position, let size = referenceWindow?.size {
+            var screenFrameInQuartzCoordinates = screen.frame
+            screenFrameInQuartzCoordinates.origin.y = NSMaxY(NSScreen.screens[0].frame) - NSMaxY(screen.frame)
+            let windowRect = CGRect(origin: topLeftCorner, size: size)
+            return windowRect.intersects(screenFrameInQuartzCoordinates)
         }
         return true
     }
