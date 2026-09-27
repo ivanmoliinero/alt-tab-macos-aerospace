@@ -52,6 +52,13 @@ final class PieMenuPanel: NSPanel {
             return
         }
 
+        let animDuration = Preferences.pieMenuAnimationDuration
+        if animDuration > 0.0 {
+            view.animateExpansion(duration: animDuration)
+        } else {
+            view.resetExpansionAnimation()
+        }
+
         alphaValue = 1.0
         makeKeyAndOrderFront(nil)
 
@@ -89,6 +96,7 @@ final class PieMenuPanel: NSPanel {
 
     override func orderOut(_ sender: Any?) {
         MainThreadStall.step()
+        view.resetExpansionAnimation()
         alphaValue = 0.0
         super.orderOut(sender)
         if !SwitcherSession.isActive {

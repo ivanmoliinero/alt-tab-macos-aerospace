@@ -30,6 +30,8 @@ class Preferences {
             "showTitles": ShowTitlesPreference.windowTitle.indexAsString,
             "fadeOutAnimation": "false",
             "previewFadeInAnimation": "true",
+            "pieMenuAnimationEnabled": "true",
+            "pieMenuAnimationSpeed": "50",
             "startAtLogin": "true",
             "menubarIcon": MenubarIconPreference.outlined.indexAsString,
             "menubarIconShown": "true",
@@ -109,6 +111,17 @@ class Preferences {
     static var windowDisplayDelay: DispatchTimeInterval { DispatchTimeInterval.milliseconds(windowDisplayDelayInMs) }
     static var fadeOutAnimation: Bool { CachedUserDefaults.bool("fadeOutAnimation") }
     static var previewFadeInAnimation: Bool { CachedUserDefaults.bool("previewFadeInAnimation") }
+    static var pieMenuAnimationEnabled: Bool { CachedUserDefaults.bool("pieMenuAnimationEnabled") }
+    static var pieMenuAnimationSpeed: Int { CachedUserDefaults.int("pieMenuAnimationSpeed") }
+    static var pieMenuAnimationDuration: Double {
+        guard pieMenuAnimationEnabled else { return 0.0 }
+        let speed = pieMenuAnimationSpeed
+        guard speed > 0 else { return 0.0 }
+        let minDuration: Double = 0.05
+        let maxDuration: Double = 0.35
+        let progress = Double(speed - 1) / 99.0
+        return maxDuration - progress * (maxDuration - minDuration)
+    }
     static var hideSpaceNumberLabels: Bool { CachedUserDefaults.bool("hideSpaceNumberLabels") }
     static var hideStatusIcons: Bool { CachedUserDefaults.bool("hideStatusIcons") }
     static var startAtLogin: Bool { CachedUserDefaults.bool("startAtLogin") }

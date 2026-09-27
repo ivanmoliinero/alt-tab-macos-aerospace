@@ -43,6 +43,39 @@ final class PieMenuView: NSView {
         outerRadius * 0.42
     }
 
+    // MARK: - Entrance Animation
+
+    /// Triggers an expansion animation scaling from the center outward with deceleration (ease-out).
+    func animateExpansion(duration: Double) {
+        guard let layer = self.layer, duration > 0.0 else { return }
+        layer.removeAnimation(forKey: "pieMenuExpansion")
+
+        let cx = bounds.midX
+        let cy = bounds.midY
+
+        var startTransform = CATransform3DIdentity
+        startTransform = CATransform3DTranslate(startTransform, cx, cy, 0)
+        startTransform = CATransform3DScale(startTransform, 0.05, 0.05, 1.0)
+        startTransform = CATransform3DTranslate(startTransform, -cx, -cy, 0)
+
+        let anim = CABasicAnimation(keyPath: "transform")
+        anim.fromValue = NSValue(caTransform3D: startTransform)
+        anim.toValue = NSValue(caTransform3D: CATransform3DIdentity)
+        anim.duration = duration
+        // Ease-out curve: fast expansion at start, smooth deceleration into final resting position
+        anim.timingFunction = CAMediaTimingFunction(controlPoints: 0.16, 1.0, 0.3, 1.0)
+        anim.fillMode = .both
+        anim.isRemovedOnCompletion = true
+
+        layer.add(anim, forKey: "pieMenuExpansion")
+    }
+
+    /// Resets any active expansion animation and restores the layer transform to identity.
+    func resetExpansionAnimation() {
+        layer?.removeAnimation(forKey: "pieMenuExpansion")
+        layer?.transform = CATransform3DIdentity
+    }
+
     // MARK: - Data Synchronization
 
     /// Reloads window items from the current AeroSpace-filtered Windows list.
